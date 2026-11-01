@@ -236,28 +236,70 @@ if pd.isna(hist_volatility) or hist_volatility == 0:
 # --- SECTION 2: KEY METRICS & BENCHMARK COMPARISON ---
 st.subheader("2. Key Metrics & Market Outlook")
 
-with st.expander("Model Performance (XGBoost vs Random Forest Academic Benchmark)", expanded=False):
-    st.markdown(f"**Comparative Evaluation across Economic & Meteorological Indicators ({comm_name})**")
-    
-    if comm_name == "Onion":
+# --- Per-horizon benchmark lookup ---
+# Source: optimized holdout metrics from models/optimized/*/metrics_summary.json
+# Algo key for Potato and Tur Dal non-RF branch is GradientBoosting (labelled XGBoost in UI for Onion only)
+_METRICS_TABLE = {
+    # (commodity, horizon, algo_key): (MAE, RMSE, R2, MAPE_str)
+    # ── ONION ──────────────────────────────────────────────────────────────────
+    ("Onion", "7 Days",  "XGB"): (460.92,  599.59,  0.7535, "16.49%"),
+    ("Onion", "7 Days",  "RF"):  (420.78,  569.26,  0.7778, "14.78%"),
+    ("Onion", "14 Days", "XGB"): (593.42,  764.26,  0.6031, "22.75%"),
+    ("Onion", "14 Days", "RF"):  (556.89,  736.14,  0.6318, "20.22%"),
+    ("Onion", "30 Days", "XGB"): (1022.95, 1271.80, -0.1202, "35.27%"),
+    ("Onion", "30 Days", "RF"):  (1010.55, 1252.01, -0.0856, "33.41%"),
+    # ── POTATO ─────────────────────────────────────────────────────────────────
+    ("Potato", "7 Days",  "XGB"): (91.20,  96.71,  -1.3244, "17.89%"),
+    ("Potato", "7 Days",  "RF"):  (63.52,  66.01,  -0.0829, "12.37%"),
+    ("Potato", "14 Days", "XGB"): (151.68, 158.59, -7.1314, "29.84%"),
+    ("Potato", "14 Days", "RF"):  (141.80, 149.92, -6.2670, "27.98%"),
+    ("Potato", "30 Days", "XGB"): (310.56, 317.13, -97.8010, "61.47%"),
+    ("Potato", "30 Days", "RF"):  (235.78, 241.45, -56.2686, "46.60%"),
+    # ── TUR DAL ────────────────────────────────────────────────────────────────
+    ("Tur Dal", "7 Days",  "XGB"): (643.15,  909.38,  0.3467, "6.95%"),
+    ("Tur Dal", "7 Days",  "RF"):  (616.49,  887.52,  0.3777, "6.73%"),
+    ("Tur Dal", "14 Days", "XGB"): (772.14,  1020.28, 0.1728, "8.03%"),
+    ("Tur Dal", "14 Days", "RF"):  (775.03,  1019.93, 0.1733, "8.06%"),
+    ("Tur Dal", "30 Days", "XGB"): (1073.25, 1308.03, -0.3242, "10.76%"),
+    ("Tur Dal", "30 Days", "RF"):  (1044.18, 1266.06, -0.2406, "10.50%"),
+}
+
+# Map UI model choice to algo key
+_bench_algo = "RF" if "Random Forest" in model_choice else "XGB"
+_xgb_key = ("XGBoost (Original)" if comm_name == "Onion" else "GradientBoosting (Original)")
+_rf_key   = "Random Forest (Alternative)"
+
+_xgb_row = _METRICS_TABLE.get((comm_name, forecast_horizon, "XGB"))
+_rf_row  = _METRICS_TABLE.get((comm_name, forecast_horizon, "RF"))
+
+with st.expander(f"Model Performance Benchmark ({forecast_horizon} Horizon)", expanded=False):
+    st.markdown(f"**Comparative Evaluation – {comm_name} | {forecast_horizon} Forecast Horizon**")
+    st.caption("All values computed on the chronological holdout test set (data unseen during training).")
+
+    if _xgb_row and _rf_row:
         perf_data = {
-            "Evaluation Metric": ["Mean Absolute Error (MAE)", "Root Mean Squared Error (RMSE)", "R² Score", "Mean Absolute Percentage Error (MAPE)"],
-            "XGBoost (Original)": ["₹ 442.46 / Qtl", "₹ 577.37 / Qtl", "0.7714", "15.61%"],
-            "Random Forest (Alternative)": ["₹ 440.01 / Qtl", "₹ 577.91 / Qtl", "0.7710", "15.75%"]
+            "Evaluation Metric": [
+                "Mean Absolute Error (MAE)",
+                "Root Mean Squared Error (RMSE)",
+                "R² Score",
+                "Mean Absolute Percentage Error (MAPE)",
+            ],
+            _xgb_key: [
+                f"₹ {_xgb_row[0]:,.2f} / Qtl",
+                f"₹ {_xgb_row[1]:,.2f} / Qtl",
+                f"{_xgb_row[2]:.4f}",
+                _xgb_row[3],
+            ],
+            _rf_key: [
+                f"₹ {_rf_row[0]:,.2f} / Qtl",
+                f"₹ {_rf_row[1]:,.2f} / Qtl",
+                f"{_rf_row[2]:.4f}",
+                _rf_row[3],
+            ],
         }
-    elif comm_name == "Potato":
-        perf_data = {
-            "Evaluation Metric": ["Mean Absolute Error (MAE)", "Root Mean Squared Error (RMSE)", "R² Score", "Mean Absolute Percentage Error (MAPE)"],
-            "XGBoost (Original)": ["₹ 48.20 / Qtl", "₹ 62.40 / Qtl", "0.9520", "6.85%"],
-            "Random Forest (Alternative)": ["₹ 45.33 / Qtl", "₹ 55.99 / Qtl", "0.9647", "6.21%"]
-        }
-    else:  # Tur Dal
-        perf_data = {
-            "Evaluation Metric": ["Mean Absolute Error (MAE)", "Root Mean Squared Error (RMSE)", "R² Score", "Mean Absolute Percentage Error (MAPE)"],
-            "XGBoost (Original)": ["₹ 680.10 / Qtl", "₹ 945.30 / Qtl", "0.4120", "7.10%"],
-            "Random Forest (Alternative)": ["₹ 707.42 / Qtl", "₹ 1003.66 / Qtl", "0.3287", "7.76%"]
-        }
-    st.table(pd.DataFrame(perf_data))
+        st.table(pd.DataFrame(perf_data))
+    else:
+        st.warning("Benchmark metrics not available for this combination.")
     st.caption("Both models execute through the identical feature engineering and Decision Support System (DSS) pipeline.")
 
 col1, col2, col3, col4 = st.columns(4)
