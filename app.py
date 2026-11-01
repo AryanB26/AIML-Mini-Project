@@ -169,7 +169,8 @@ def load_resources(comm_choice, horizon_choice, selected_engine):
         
     df_data['Date'] = pd.to_datetime(df_data['Date'])
     df_data = df_data.sort_values('Date')
-    df_data = df_data.assign(**df_data.select_dtypes(include=['number']).ffill().bfill())
+    num_cols = df_data.select_dtypes(include=['number']).columns
+    df_data[num_cols] = df_data[num_cols].ffill().bfill()
     
     # 2. Safe Model Loading
     model_obj = None
