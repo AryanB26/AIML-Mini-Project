@@ -270,12 +270,35 @@ with col2:
 
 with col3:
     outlook = "RISING" if pct_change > 0 else "STABLE / FALLING"
-    if comm_name == "Potato":
-        confidence = "93.8%" if "Random Forest" in model_choice else "93.1%"
-    elif comm_name == "Tur Dal":
-        confidence = "92.2%" if "Random Forest" in model_choice else "92.9%"
-    else:
-        confidence = "84.3%" if "Random Forest" in model_choice else "84.4%"
+
+    # --- Per-horizon, per-model confidence values ---
+    # Source: optimized holdout MAPE from models/optimized/*/metrics_summary.json
+    # Formula: Confidence = (1 - MAPE/100) * 100  [rounded to 1 decimal]
+    _CONFIDENCE_TABLE = {
+        # (commodity_name, horizon_label, "RF" or "XGB/GB")
+        ("Onion",   "7 Days",  "RF"):  "85.2%",
+        ("Onion",   "7 Days",  "XGB"): "83.5%",
+        ("Onion",   "14 Days", "RF"):  "79.8%",
+        ("Onion",   "14 Days", "XGB"): "77.3%",
+        ("Onion",   "30 Days", "RF"):  "66.6%",
+        ("Onion",   "30 Days", "XGB"): "64.7%",
+        ("Potato",  "7 Days",  "RF"):  "87.6%",
+        ("Potato",  "7 Days",  "XGB"): "82.1%",
+        ("Potato",  "14 Days", "RF"):  "72.0%",
+        ("Potato",  "14 Days", "XGB"): "70.2%",
+        ("Potato",  "30 Days", "RF"):  "53.4%",
+        ("Potato",  "30 Days", "XGB"): "38.5%",
+        ("Tur Dal", "7 Days",  "RF"):  "93.3%",
+        ("Tur Dal", "7 Days",  "XGB"): "93.0%",
+        ("Tur Dal", "14 Days", "RF"):  "91.9%",
+        ("Tur Dal", "14 Days", "XGB"): "92.0%",
+        ("Tur Dal", "30 Days", "RF"):  "89.5%",
+        ("Tur Dal", "30 Days", "XGB"): "89.2%",
+    }
+    _algo_key = "RF" if "Random Forest" in model_choice else "XGB"
+    confidence = _CONFIDENCE_TABLE.get(
+        (comm_name, forecast_horizon, _algo_key), "N/A"
+    )
     st.metric(label="Price Trend Outlook", value=outlook, delta=f"Model Confidence: {confidence}")
 
 with col4:
