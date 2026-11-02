@@ -344,8 +344,17 @@ with col3:
     st.metric(label="Price Trend Outlook", value=outlook, delta=f"Model Confidence: {confidence}")
 
 with col4:
-    alert_level = "HIGH" if pct_change > 5 else "NORMAL"
-    st.error(f"**AI ALERT: {alert_level}**\n\nSpike Probability: {abs(pct_change)*3:.1f}%")
+    if pct_change > 5:
+        alert_level = "HIGH (INFLATION SPIKE)"
+        spike_prob = min(100.0, pct_change * 3)
+        st.error(f"**AI ALERT: {alert_level}**\n\nSpike Probability: {spike_prob:.1f}%")
+    elif pct_change < -5:
+        alert_level = "CRASH (FARMER DISTRESS)"
+        st.warning(f"**AI ALERT: {alert_level}**\n\nDrop: {abs(pct_change):.1f}% | Spike Risk: 0.0%")
+    else:
+        alert_level = "NORMAL (STABLE)"
+        spike_prob = max(0.0, pct_change * 3)
+        st.success(f"**AI ALERT: {alert_level}**\n\nSpike Probability: {spike_prob:.1f}%")
 
 # --- SECTION 3: PRICE TRAJECTORY GRAPH ---
 st.subheader("Price Trajectory: Historical & AI Forecast")
